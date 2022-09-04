@@ -1,0 +1,1 @@
+sh1mcc: sh1mcc.o
