@@ -1,4 +1,4 @@
-CFLAGS=-std=c11 -g -static
+CFLAGS=-std=c11 -g -static -Wall -Wextra
 .PHONY: test
 
 sh1mcc: sh1mcc.c
