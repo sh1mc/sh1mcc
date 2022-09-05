@@ -1,27 +1,10 @@
-#include <ctype.h>
+#include "sh1mcc.h"
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum {
-    TK_RESERVED,
-    TK_NUM,
-    TK_EOF,
-} TokenKind;
-
-typedef struct token Token;
-
-struct token {
-    TokenKind kind;
-    Token *next;
-    int val;
-    char *str;
-    size_t len;
-};
-
-Token *token;
 
 void error(char *fmt, ...) {
     va_list ap;
@@ -30,8 +13,6 @@ void error(char *fmt, ...) {
     fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
 }
-
-char *user_input;
 
 void error_at(char *loc, char *fmt, ...) {
     va_list ap;
@@ -124,27 +105,6 @@ Token *tokenize(char *p) {
     new_token(TK_EOF, cur, p, 1);
     return head.next;
 }
-
-typedef enum {
-    ND_LESS,
-    ND_LESS_EQ,
-    ND_EQ,
-    ND_NEQ,
-    ND_ADD,
-    ND_SUB,
-    ND_MUL,
-    ND_DIV,
-    ND_NUM,
-} NodeKind;
-
-typedef struct node Node;
-
-struct node {
-    NodeKind kind;
-    Node *lhs;
-    Node *rhs;
-    int val;
-};
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = malloc(sizeof(Node));

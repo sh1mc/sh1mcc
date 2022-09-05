@@ -1,9 +1,11 @@
 #!/bin/bash
 assert() {
+    mkdir -p tmp
+    cd tmp
     expected="$1"
     input="$2"
 
-    ./sh1mcc "$input" > tmp.s
+    ../bin/sh1mcc "$input" > tmp.s
     cc -o tmp tmp.s
     ./tmp
     actual="$?"
@@ -14,6 +16,7 @@ assert() {
         echo -e "$input\t=>\t$expected expected, but got $actual"
         exit 1
     fi
+    cd ../
 }
 
 assert 0 0

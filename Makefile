@@ -1,11 +1,18 @@
 CFLAGS=-std=c11 -g -static -Wall -Wextra
-.PHONY: test
+.PHONY: test clean
 
-sh1mcc: sh1mcc.c
+SRCS=$(wildcard src/*.c)
+OBJS=$(subst src,build,$(SRCS:.c=.o))
 
-test: sh1mcc
-	./test.sh
+bin/sh1mcc: $(OBJS)
+	$(CC) -o bin/sh1mcc $(OBJS) $(LDFLAGS)
+
+$(OBJS): src/sh1mcc.h
+	cd build && $(CC) -c ../src/$(basename $(@F)).c ../$<
+
+test: bin/sh1mcc
+	./test/test.sh
 
 clean:
-	rm -f sh1mcc *.o *~ tmp*
+	$(RM) -rf bin/* build/*
 
