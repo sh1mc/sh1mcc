@@ -18,6 +18,7 @@ struct token {
     Token *next;
     int val;
     char *str;
+    size_t len;
 };
 
 Token *token;
@@ -45,16 +46,20 @@ void error_at(char *loc, char *fmt, ...) {
     exit(1);
 }
 
-bool consume(char op) {
-    if (token->kind != TK_RESERVED || token->str[0] != op) {
+bool consume(char *op) {
+    if (token->kind != TK_RESERVED ||
+        strlen(op) != token->len ||
+        memcmp(token->str, op, token->len)) {
         return false;
     }
     token = token->next;
     return true;
 }
 
-void expect(char op) {
-    if (token->kind != TK_RESERVED || token->str[0] != op) {
+void expect(char *op) {
+    if (token->kind != TK_RESERVED ||
+        strlen(op) != token->len ||
+        memcmp(token->str, op, token->len)) {
         error_at(token->str, "Unexpected token: %c", op);
     }
     token = token->next;
@@ -71,10 +76,11 @@ int expect_number() {
 
 bool at_eof() { return token->kind == TK_EOF; }
 
-Token *new_token(TokenKind kind, Token *cur, char *str) {
+Token *new_token(TokenKind kind, Token *cur, char *str, size_t len) {
     Token *next = malloc(sizeof(Token));
     next->kind = kind;
     next->str = str;
+    next->len = len;
     next->next = NULL;
     cur->next = next;
     return next;
@@ -89,25 +95,41 @@ Token *tokenize(char *p) {
             p++;
             continue;
         }
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' ||
-            *p == ')') {
-            cur = new_token(TK_RESERVED, cur, p);
-            p++;
+        if (strncmp(p, "==", 2) == 0 ||
+            strncmp(p, "!=", 2) == 0 ||
+            strncmp(p, ">=", 2) == 0 ||
+            strncmp(p, "<=", 2) == 0) {
+            cur = new_token(TK_RESERVED, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
+            *p == '(' || *p == ')' || *p == '<' || *p == '>') {
+            cur = new_token(TK_RESERVED, cur, p, 1);
+            p += 1;
             continue;
         }
         if (isdigit(*p)) {
-            cur = new_token(TK_NUM, cur, p);
-            cur->val = strtol(p, &p, 10);
+            int old_p = (long)p;
+            int val = strtol(p, &p, 10);
+            unsigned digit_len = (long)p - old_p;
+            cur = new_token(TK_NUM, cur, p, digit_len);
+            cur->val = val;
             continue;
         }
 
         error_at(p, "Tokenize failed.");
     }
-    new_token(TK_EOF, cur, p);
+    new_token(TK_EOF, cur, p, 1);
     return head.next;
 }
 
 typedef enum {
+    ND_LESS,
+    ND_LESS_EQ,
+    ND_EQ,
+    ND_NEQ,
     ND_ADD,
     ND_SUB,
     ND_MUL,
@@ -140,16 +162,53 @@ Node *new_node_num(int val) {
 }
 
 Node *expr();
+Node *equality();
+Node *relational();
+Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
 
 Node *expr() {
+    return equality();
+}
+
+Node *equality() {
+    Node *node = relational();
+    while (1) {
+        if (consume("==")) {
+            node = new_node(ND_EQ, node, relational());
+        } else if (consume("!=")) {
+            node = new_node(ND_NEQ, node, relational());
+        } else {
+            return node;
+        }
+    }
+}
+
+Node *relational() {
+    Node *node = add();
+    while (1) {
+        if (consume("<")) {
+            node = new_node(ND_LESS, node, add());
+        } else if (consume("<=")) {
+            node = new_node(ND_LESS_EQ, node, add());
+        } else if (consume(">")) {
+            node = new_node(ND_LESS, add(), node);
+        } else if (consume(">=")) {
+            node = new_node(ND_LESS_EQ, add(), node);
+        } else {
+            return node;
+        }
+    }
+}
+
+Node *add() {
     Node *node = mul();
     while (1) {
-        if (consume('+')) {
+        if (consume("+")) {
             node = new_node(ND_ADD, node, mul());
-        } else if (consume('-')) {
+        } else if (consume("-")) {
             node = new_node(ND_SUB, node, mul());
         } else {
             return node;
@@ -160,9 +219,9 @@ Node *expr() {
 Node *mul() {
     Node *node = unary();
     while (1) {
-        if (consume('*')) {
+        if (consume("*")) {
             node = new_node(ND_MUL, node, unary());
-        } else if (consume('/')) {
+        } else if (consume("/")) {
             node = new_node(ND_DIV, node, unary());
         } else {
             return node;
@@ -171,19 +230,18 @@ Node *mul() {
 }
 
 Node *unary() {
-    if (consume('+')) {
+    if (consume("+")) {
         return primary();
-    }
-    if (consume('-')) {
+    } else if (consume("-")) {
         return new_node(ND_SUB, new_node_num(0), primary());
     }
     return primary();
 }
 
 Node *primary() {
-    if (consume('(')) {
+    if (consume("(")) {
         Node *node = expr();
-        expect(')');
+        expect(")");
         return node;
     }
     return new_node_num(expect_number());
@@ -202,6 +260,26 @@ void gen(Node *node) {
     printf("\tpop rax\n");
 
     switch (node->kind) {
+        case ND_LESS:
+            printf("\tcmp rax, rdi\n");
+            printf("\tsetl al\n");
+            printf("\tmovzb rax, al\n");
+            break;
+        case ND_LESS_EQ:
+            printf("\tcmp rax, rdi\n");
+            printf("\tsetle al\n");
+            printf("\tmovzb rax, al\n");
+            break;
+        case ND_EQ:
+            printf("\tcmp rax, rdi\n");
+            printf("\tsete al\n");
+            printf("\tmovzb rax, al\n");
+            break;
+        case ND_NEQ:
+            printf("\tcmp rax, rdi\n");
+            printf("\tsetne al\n");
+            printf("\tmovzb rax, al\n");
+            break;
         case ND_ADD:
             printf("\tadd rax, rdi\n");
             break;
@@ -219,6 +297,23 @@ void gen(Node *node) {
             error("Parse failed (unknown rule).");
     }
     printf("\tpush rax\n");
+}
+
+void free_token(Token *t) {
+    if (t->next) {
+        free_token(t->next);
+    }
+    free(t);
+}
+
+void free_ast(Node *n) {
+    if (n->lhs) {
+        free_ast(n->lhs);
+    }
+    if (n->rhs) {
+        free_ast(n->rhs);
+    }
+    free(n);
 }
 
 int main(int argc, char *argv[]) {
@@ -239,5 +334,8 @@ int main(int argc, char *argv[]) {
 
     printf("\tpop rax\n");
     printf("\tret\n");
+
+    free_token(token);
+    free_ast(node);
     return 0;
 }

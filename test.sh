@@ -24,5 +24,12 @@ assert 5 "(2 + 3) * 1"
 assert 10 "(1 + 2)*3 + 4- 6 /2"
 assert 10 "-10+20"
 assert 5 "-1* +5-(-10)"
+assert 1 "1!=2"
+assert 1 "-2*-3==6"
+assert 0 "1 + 2 > 3 + 4"
+assert 1 "1 + 2 >= 3"
+assert 0 "3 + 4 < 1 + 2"
+assert 1 "3 <= 1 + 2"
+assert 2 "(1 + 2 <= 3)+(7/2 == 3)"
 
 echo OK
