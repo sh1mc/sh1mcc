@@ -1,8 +1,8 @@
+#include <ctype.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <stdbool.h>
 #include <string.h>
 
 typedef enum {
@@ -15,15 +15,14 @@ typedef struct token Token;
 
 struct token {
     TokenKind kind;
-    Token* next;
+    Token *next;
     int val;
-    char* str;
+    char *str;
 };
 
-Token* token;
+Token *token;
 
-void error(char* fmt, ...)
-{
+void error(char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
@@ -31,10 +30,9 @@ void error(char* fmt, ...)
     exit(EXIT_FAILURE);
 }
 
-char* user_input;
+char *user_input;
 
-void error_at(char* loc, char* fmt, ...)
-{
+void error_at(char *loc, char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
 
@@ -47,8 +45,7 @@ void error_at(char* loc, char* fmt, ...)
     exit(1);
 }
 
-bool consume(char op)
-{
+bool consume(char op) {
     if (token->kind != TK_RESERVED || token->str[0] != op) {
         return false;
     }
@@ -56,16 +53,14 @@ bool consume(char op)
     return true;
 }
 
-void expect(char op)
-{
+void expect(char op) {
     if (token->kind != TK_RESERVED || token->str[0] != op) {
         error_at(token->str, "Unexpected token: %c", op);
     }
     token = token->next;
 }
 
-int expect_number()
-{
+int expect_number() {
     if (token->kind != TK_NUM) {
         error_at(token->str, "The token is not number.");
     }
@@ -74,14 +69,10 @@ int expect_number()
     return val;
 }
 
-bool at_eof()
-{
-    return token->kind == TK_EOF;
-}
+bool at_eof() { return token->kind == TK_EOF; }
 
-Token* new_token(TokenKind kind, Token* cur, char* str)
-{
-    Token* next = malloc(sizeof(Token));
+Token *new_token(TokenKind kind, Token *cur, char *str) {
+    Token *next = malloc(sizeof(Token));
     next->kind = kind;
     next->str = str;
     next->next = NULL;
@@ -89,17 +80,17 @@ Token* new_token(TokenKind kind, Token* cur, char* str)
     return next;
 }
 
-Token* tokenize(char* p)
-{
+Token *tokenize(char *p) {
     Token head;
     head.next = NULL;
-    Token* cur = &head;
+    Token *cur = &head;
     while (*p) {
         if (isspace(*p)) {
             p++;
             continue;
         }
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' ||
+            *p == ')') {
             cur = new_token(TK_RESERVED, cur, p);
             p++;
             continue;
@@ -128,67 +119,58 @@ typedef struct node Node;
 
 struct node {
     NodeKind kind;
-    Node* lhs;
-    Node* rhs;
+    Node *lhs;
+    Node *rhs;
     int val;
 };
 
-Node* new_node(NodeKind kind, Node* lhs, Node* rhs)
-{
-    Node* node = malloc(sizeof(Node));
+Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+    Node *node = malloc(sizeof(Node));
     node->kind = kind;
     node->lhs = lhs;
     node->rhs = rhs;
     return node;
 }
 
-Node* new_node_num(int val)
-{
-    Node* node = malloc(sizeof(Node));
+Node *new_node_num(int val) {
+    Node *node = malloc(sizeof(Node));
     node->kind = ND_NUM;
     node->val = val;
     return node;
 }
 
-Node* expr();
-Node* mul();
-Node* unary();
-Node* primary();
+Node *expr();
+Node *mul();
+Node *unary();
+Node *primary();
 
-Node* expr()
-{
-    Node* node = mul();
+Node *expr() {
+    Node *node = mul();
     while (1) {
         if (consume('+')) {
             node = new_node(ND_ADD, node, mul());
-        }
-        else if (consume('-')) {
+        } else if (consume('-')) {
             node = new_node(ND_SUB, node, mul());
-        }
-        else {
+        } else {
             return node;
         }
     }
 }
 
-Node* mul()
-{
-    Node* node = unary();
+Node *mul() {
+    Node *node = unary();
     while (1) {
         if (consume('*')) {
             node = new_node(ND_MUL, node, unary());
-        }
-        else if (consume('/')) {
+        } else if (consume('/')) {
             node = new_node(ND_DIV, node, unary());
-        }
-        else {
+        } else {
             return node;
         }
     }
 }
 
-Node* unary()
-{
+Node *unary() {
     if (consume('+')) {
         return primary();
     }
@@ -198,18 +180,16 @@ Node* unary()
     return primary();
 }
 
-Node* primary()
-{
+Node *primary() {
     if (consume('(')) {
-        Node* node = expr();
+        Node *node = expr();
         expect(')');
         return node;
     }
     return new_node_num(expect_number());
 }
 
-void gen(Node* node)
-{
+void gen(Node *node) {
     if (node->kind == ND_NUM) {
         printf("\tpush %d\n", node->val);
         return;
@@ -222,27 +202,26 @@ void gen(Node* node)
     printf("\tpop rax\n");
 
     switch (node->kind) {
-    case ND_ADD:
-        printf("\tadd rax, rdi\n");
-        break;
-    case ND_SUB:
-        printf("\tsub rax, rdi\n");
-        break;
-    case ND_MUL:
-        printf("\timul rax, rdi\n");
-        break;
-    case ND_DIV:
-        printf("\tcqo\n");
-        printf("\tidiv rdi\n");
-        break;
-    default:
-        error("Parse failed (unknown rule).");
+        case ND_ADD:
+            printf("\tadd rax, rdi\n");
+            break;
+        case ND_SUB:
+            printf("\tsub rax, rdi\n");
+            break;
+        case ND_MUL:
+            printf("\timul rax, rdi\n");
+            break;
+        case ND_DIV:
+            printf("\tcqo\n");
+            printf("\tidiv rdi\n");
+            break;
+        default:
+            error("Parse failed (unknown rule).");
     }
     printf("\tpush rax\n");
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Invalid argument number.");
         exit(EXIT_FAILURE);
@@ -250,7 +229,7 @@ int main(int argc, char* argv[])
 
     user_input = argv[1];
     token = tokenize(user_input);
-    Node* node = expr();
+    Node *node = expr();
 
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
