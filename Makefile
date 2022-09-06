@@ -7,12 +7,11 @@ OBJS=$(subst src,build,$(SRCS:.c=.o))
 bin/sh1mcc: $(OBJS)
 	$(CC) -o bin/sh1mcc $(OBJS) $(LDFLAGS)
 
-$(OBJS): src/sh1mcc.h
-	cd build && $(CC) -c ../src/$(basename $(@F)).c ../$<
+build/%.o: src/%.c src/sh1mcc.h
+	$(CC) -c -o $@ $<
 
 test: bin/sh1mcc
 	./test/test.sh
 
 clean:
 	$(RM) -rf bin/* build/*
-

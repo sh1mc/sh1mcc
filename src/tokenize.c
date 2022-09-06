@@ -4,9 +4,6 @@
 
 #include "sh1mcc.h"
 
-extern Token *token;
-extern char *user_input;
-
 bool consume(char *op) {
     if (token->kind != TK_RESERVED ||
         strlen(op) != token->len ||
