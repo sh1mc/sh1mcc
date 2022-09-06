@@ -17,7 +17,16 @@ Node *new_node_num(int val) {
     return node;
 }
 
+Node *new_node_var() {
+    Node *node = malloc(sizeof(Node));
+    node->kind = ND_LVAR;
+    return node;
+}
+
+void *program();
+Node *statement();
 Node *expr();
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
@@ -25,8 +34,32 @@ Node *mul();
 Node *unary();
 Node *primary();
 
+Node *code[100];
+
+void *program() {
+    int i = 0;
+    while (!at_eof()) {
+        code[i++] = statement();
+    }
+    code[i] = NULL;
+}
+
+Node *statement() {
+    Node *node = expr();
+    expect(";");
+    return node;
+}
+
 Node *expr() {
-    return equality();
+    return assign();
+}
+
+Node *assign() {
+    Node *node = equality();
+    if (consume("=")) {
+        node = assign();
+    }
+    return node;
 }
 
 Node *equality() {
@@ -88,7 +121,8 @@ Node *mul() {
 Node *unary() {
     if (consume("+")) {
         return primary();
-    } else if (consume("-")) {
+    }
+    if (consume("-")) {
         return new_node(ND_SUB, new_node_num(0), primary());
     }
     return primary();
@@ -100,5 +134,14 @@ Node *primary() {
         expect(")");
         return node;
     }
-    return new_node_num(expect_number());
+    if (at_num()) {
+        return new_node_num(expect_number());
+    }
+    if (at_ident()) {
+        Node *node = malloc(sizeof(Node));
+        node->kind = ND_LVAR;
+        node->offset = (token->str[0] - 'a' + 1) * 8;
+        return node;
+    }
+    error("Parse Failed.");
 }

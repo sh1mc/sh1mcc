@@ -33,6 +33,8 @@ int expect_number() {
 }
 
 bool at_eof() { return token->kind == TK_EOF; }
+bool at_num() { return token->kind == TK_NUM; }
+bool at_ident() { return token->kind == TK_IDENT; }
 
 Token *new_token(TokenKind kind, Token *cur, char *str, size_t len) {
     Token *next = malloc(sizeof(Token));
@@ -68,6 +70,16 @@ Token *tokenize(char *p) {
             p += 1;
             continue;
         }
+
+        unsigned ident_len = 0;
+        while ('a' <= *(p + ident_len) && *(p + ident_len) <= 'z') {
+            ident_len++;
+        }
+        if (ident_len > 0) {
+            cur = new_token(TK_IDENT, cur, p, ident_len);
+            p += ident_len;
+        }
+
         if (isdigit(*p)) {
             int old_p = (long)p;
             int val = strtol(p, &p, 10);
