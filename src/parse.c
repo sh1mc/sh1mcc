@@ -98,7 +98,7 @@ Node *expr() {
 Node *assign() {
     Node *node = equality();
     if (consume("=")) {
-        node = assign();
+        node = new_node(ND_ASSIGN, node, assign());
     }
     return node;
 }
