@@ -1,6 +1,47 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "sh1mcc.h"
+
+bool consume(char *op) {
+    if (token->kind != TK_RESERVED ||
+        strlen(op) != token->len ||
+        memcmp(token->str, op, token->len)) {
+        return false;
+    }
+    token = token->next;
+    return true;
+}
+
+Token *consume_ident() {
+    if (token->kind != TK_IDENT) {
+        return false;
+    }
+    Token *ret_tok = token;
+    token = token->next;
+    return ret_tok;
+}
+
+void expect(char *op) {
+    if (token->kind != TK_RESERVED ||
+        strlen(op) != token->len ||
+        memcmp(token->str, op, token->len)) {
+        error_at(token->str, "Unexpected token: %s", op);
+    }
+    token = token->next;
+}
+
+int expect_number() {
+    if (token->kind != TK_NUM) {
+        error_at(token->str, "The token is not number.");
+    }
+    int val = token->val;
+    token = token->next;
+    return val;
+}
+
+bool at_eof() { return token->kind == TK_EOF; }
+bool at_num() { return token->kind == TK_NUM; }
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = malloc(sizeof(Node));
@@ -23,7 +64,7 @@ Node *new_node_var() {
     return node;
 }
 
-void *program();
+void program();
 Node *statement();
 Node *expr();
 Node *assign();
@@ -34,9 +75,9 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-Node *code[100];
+Node *code[MAX_PROGRAM_LEN];
 
-void *program() {
+void program() {
     int i = 0;
     while (!at_eof()) {
         code[i++] = statement();
@@ -137,11 +178,13 @@ Node *primary() {
     if (at_num()) {
         return new_node_num(expect_number());
     }
-    if (at_ident()) {
+    Token *ident_tok = consume_ident();
+    if (ident_tok) {
         Node *node = malloc(sizeof(Node));
         node->kind = ND_LVAR;
-        node->offset = (token->str[0] - 'a' + 1) * 8;
+        node->offset = (ident_tok->str[0] - 'a' + 1) * 8;
         return node;
     }
     error("Parse Failed.");
+    return NULL;
 }

@@ -1,5 +1,6 @@
 #ifndef SH1MCC_H
 #define SH1MCC_H
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +51,8 @@ struct node {
     int offset;
 };
 
-extern Node *code[100];
+#define MAX_PROGRAM_LEN 100
+extern Node *code[MAX_PROGRAM_LEN];
 
 Token *tokenize(char *p);
 bool consume(char *op);
@@ -58,11 +60,10 @@ void expect(char *op);
 int expect_number();
 bool at_eof();
 bool at_num();
-bool at_ident();
 Token *new_token(TokenKind kind, Token *cur, char *str, size_t len);
 Token *tokenize(char *p);
 
-Node *expr();
+void program();
 
 void gen(Node *node);
 

@@ -1,4 +1,4 @@
-CFLAGS=-std=c11 -g -static -Wall -Wextra
+CFLAGS=-std=c11 -g3 -static -Wall -Wextra
 .PHONY: test clean
 
 SRCS=$(wildcard src/*.c)
@@ -8,7 +8,7 @@ bin/sh1mcc: $(OBJS)
 	$(CC) -o bin/sh1mcc $(OBJS) $(LDFLAGS)
 
 build/%.o: src/%.c src/sh1mcc.h
-	$(CC) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 test: bin/sh1mcc
 	./test/test.sh

@@ -30,18 +30,32 @@ int main(int argc, char *argv[]) {
 
     user_input = argv[1];
     token = tokenize(user_input);
-    Node *node = expr();
+    // Parse result will be stored in *code.
+    program();
 
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
     printf("main:\n");
 
-    gen(node);
+    // Reserve memory for 26 variables.
+    printf("\tpush rbp\n");
+    printf("\tmov rbp, rsp\n");
+    printf("\tsub rsp, 208\n");
 
-    printf("\tpop rax\n");
+    // Generate
+    for (int i = 0; code[i]; i++) {
+        gen(code[i]);
+        printf("\tpop rax;\n");
+    }
+
+    // The return value is rax.
+    printf("\tmov rsp, rbp\n");
+    printf("\tpop rbp\n");
     printf("\tret\n");
 
     free_token(token);
-    free_ast(node);
+    for (int i = 0; code[i]; i++) {
+        free_ast(code[i]);
+    }
     return 0;
 }
