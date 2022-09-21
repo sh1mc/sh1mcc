@@ -89,7 +89,7 @@ void program() {
 Node *statement() {
     if (consume("if")) {
         expect("(");
-        Node *node = new_node(ND_IF_COND, expr(), NULL);
+        Node *node = new_node(ND_IF_COND, NULL, expr());
         expect(")");
         node = new_node(ND_IF, node, statement());
         if (consume("else")) {
@@ -98,16 +98,31 @@ Node *statement() {
         return node;
     } else if (consume("while")) {
         expect("(");
-        Node *node = new_node(ND_WHILE_COND, expr(), NULL);
+        Node *node = new_node(ND_WHILE_COND, NULL, expr());
         expect(")");
         node = new_node(ND_WHILE, node, statement());
         return node;
     } else if (consume("for")) {
         expect("(");
-        Node *node = NULL;
-        if (!consume(";")) {
-            // fixme
+        Node *node;
+        if (consume(";")) {
+            node = new_node(ND_FOR_INIT, NULL, NULL);
+        } else {
+            node = new_node(ND_FOR_INIT, NULL, expr());
+            expect(";");
         }
+        if (consume(";")) {
+            node = new_node(ND_FOR_COND, node, NULL);
+        } else {
+            node = new_node(ND_FOR_COND, node, expr());
+            expect(";");
+        }
+        if (consume(")")) {
+            node = new_node(ND_FOR_ITER, node, NULL);
+        } else {
+            node = new_node(ND_FOR_ITER, node, expr());
+        }
+        node = new_node(ND_FOR, node, statement());
         return node;
     } else {
         Node *node = expr();
