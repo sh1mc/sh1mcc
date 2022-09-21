@@ -42,6 +42,7 @@ int expect_number() {
 
 bool at_eof() { return token->kind == TK_EOF; }
 bool at_num() { return token->kind == TK_NUM; }
+bool at_before_semicolon() { return strncmp(token->str, ";", 1); }
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = malloc(sizeof(Node));
@@ -86,9 +87,33 @@ void program() {
 }
 
 Node *statement() {
-    Node *node = expr();
-    expect(";");
-    return node;
+    if (consume("if")) {
+        expect("(");
+        Node *node = new_node(ND_IF_COND, expr(), NULL);
+        expect(")");
+        node = new_node(ND_IF, node, statement());
+        if (consume("else")) {
+            node = new_node(ND_ELSE, node, statement());
+        }
+        return node;
+    } else if (consume("while")) {
+        expect("(");
+        Node *node = new_node(ND_WHILE_COND, expr(), NULL);
+        expect(")");
+        node = new_node(ND_WHILE, node, statement());
+        return node;
+    } else if (consume("for")) {
+        expect("(");
+        Node *node = NULL;
+        if (!consume(";")) {
+            // fixme
+        }
+        return node;
+    } else {
+        Node *node = expr();
+        expect(";");
+        return node;
+    }
 }
 
 Node *expr() {

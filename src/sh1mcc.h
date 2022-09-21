@@ -37,6 +37,15 @@ typedef enum {
     ND_NUM,
     ND_LVAR,
     ND_ASSIGN,
+    ND_IF_COND,
+    ND_IF,
+    ND_ELSE,
+    ND_WHILE_COND,
+    ND_WHILE,
+    ND_FOR_INIT,
+    ND_FOR_COND,
+    ND_FOR_ITER,
+    ND_FOR
 } NodeKind;
 
 typedef struct node Node;
