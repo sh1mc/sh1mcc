@@ -63,6 +63,17 @@ struct node {
 #define MAX_PROGRAM_LEN 100
 extern Node *code[MAX_PROGRAM_LEN];
 
+typedef struct LVar LVar;
+
+struct LVar {
+    LVar *next;
+    char *name;
+    size_t len;
+    int offset;
+};
+
+extern LVar *locals;
+
 Token *tokenize(char *p);
 bool consume(char *op);
 void expect(char *op);

@@ -32,6 +32,6 @@ assert 0 "3 + 4 < 1 + 2;"
 assert 1 "3 <= 1 + 2;"
 assert 2 "(1 + 2 <= 3)+(7/2 == 3);"
 assert 12 "a = 12; a;"
-assert 1 "a = 12 * 2; b = a / 2; b == 12;"
+assert 1 "ab = 12 * 2; abc = ab / 2; abc == 12;"
 
 echo OK

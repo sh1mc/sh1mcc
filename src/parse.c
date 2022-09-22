@@ -65,6 +65,17 @@ Node *new_node_var() {
     return node;
 }
 
+LVar *locals;
+
+LVar *find_lvar(Token *tok) {
+    for (LVar *var = locals; var; var = var->next) {
+        if (tok->len == var->len && memcmp(tok->str, var->name, var->len) == 0) {
+            return var;
+        }
+    }
+    return NULL;
+}
+
 void program();
 Node *statement();
 Node *expr();
@@ -222,7 +233,18 @@ Node *primary() {
     if (ident_tok) {
         Node *node = malloc(sizeof(Node));
         node->kind = ND_LVAR;
-        node->offset = (ident_tok->str[0] - 'a' + 1) * 8;
+
+        LVar *lvar = find_lvar(ident_tok);
+        if (lvar) {
+            node->offset = lvar->offset;
+        } else {
+            lvar = malloc(sizeof(LVar));
+            lvar->next = locals;
+            lvar->name = ident_tok->str;
+            lvar->len = ident_tok->len;
+            lvar->offset = locals->offset + 8;
+            node->offset = lvar->offset;
+        }
         return node;
     }
     error("Parse Failed.");

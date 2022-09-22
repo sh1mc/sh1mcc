@@ -3,6 +3,9 @@
 #include "sh1mcc.h"
 
 void free_token(Token *t) {
+    if (!t) {
+        return;
+    }
     if (t->next) {
         free_token(t->next);
     }
@@ -10,6 +13,9 @@ void free_token(Token *t) {
 }
 
 void free_ast(Node *n) {
+    if (!n) {
+        return;
+    }
     if (n->lhs) {
         free_ast(n->lhs);
     }
@@ -17,6 +23,14 @@ void free_ast(Node *n) {
         free_ast(n->rhs);
     }
     free(n);
+}
+
+void free_locals(LVar *local) {
+    if (!local) {
+        return;
+    }
+    free_locals(local->next);
+    free(local);
 }
 
 Token *token;
@@ -30,6 +44,11 @@ int main(int argc, char *argv[]) {
 
     user_input = argv[1];
     token = tokenize(user_input);
+
+    locals = malloc(sizeof(LVar));
+    locals->offset = 0;
+    locals->len = 0;
+    locals->name = "";
     // Parse result will be stored in *code.
     program();
 
